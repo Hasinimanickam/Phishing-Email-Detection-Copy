@@ -1,0 +1,19 @@
+{
+    "accuracy": 97.72,
+    "labels": [
+        "Safe",
+        "Phishing"
+    ],
+    "precision": [
+        97.83,
+        97.53
+    ],
+    "recall": [
+        98.54,
+        96.34
+    ],
+    "f1_score": [
+        98.19,
+        96.93
+    ]
+}

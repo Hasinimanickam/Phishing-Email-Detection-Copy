@@ -1,0 +1,689 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Email Detector</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+    <header>
+        <div class="logo">🛡️</div>
+        <h1>Phishing Email Detector</h1>
+        <p>AI-powered email security analysis</p>
+
+        <button type="button" id="themeToggle" class="theme-toggle">
+            ☀️ Light Mode
+        </button>
+    </header>
+
+    <!-- Email Analysis Section -->
+    <div class="main-card">
+
+        <h2>Analyze Your Email</h2>
+
+        <p class="description">
+            Paste your email content below to check whether
+            it is safe or potentially phishing.
+        </p>
+
+        <form method="POST">
+
+            <textarea
+                name="email"
+                placeholder="Paste your email content here..."
+                required>{{ email_text or '' }}</textarea>
+
+            <button type="submit">
+                Analyze Email →
+            </button>
+
+        </form>
+
+        {% if result %}
+
+        <!-- Prediction Result -->
+        <div class="result
+            {% if result == 'Phishing' %}
+                phishing
+            {% else %}
+                safe
+            {% endif %}">
+
+            {% if result == 'Phishing' %}
+                <h2>⚠️ Phishing Email Detected!</h2>
+                <p>This email contains patterns associated with phishing.</p>
+            {% else %}
+                <h2>✅ Safe Email</h2>
+                <p>No phishing patterns were detected by the model.</p>
+            {% endif %}
+
+        </div>
+
+        <!-- Prediction Probability -->
+        <div class="prediction-details">
+
+            <h3>📊 Prediction Probability</h3>
+
+            <div class="probability-item">
+                <div class="probability-heading">
+                    <span>🟢 Safe</span>
+                    <strong>{{ safe_probability }}%</strong>
+                </div>
+
+                <div class="probability-bar">
+                    <div class="safe-probability"
+                         style="width: {{ safe_probability }}%">
+                    </div>
+                </div>
+            </div>
+
+            <div class="probability-item">
+                <div class="probability-heading">
+                    <span>🔴 Phishing</span>
+                    <strong>{{ phishing_probability }}%</strong>
+                </div>
+
+                <div class="probability-bar">
+                    <div class="phishing-probability"
+                         style="width: {{ phishing_probability }}%">
+                    </div>
+                </div>
+            </div>
+
+            <p class="probability-note">
+                These percentages are model-estimated probabilities,
+                not guarantees of email safety.
+            </p>
+
+        </div>
+
+        <!-- Suspicious Patterns -->
+        <div class="analysis-card">
+
+            <h3>🔍 Suspicious Indicators</h3>
+
+            {% if suspicious_patterns %}
+
+                <ul>
+                    {% for pattern in suspicious_patterns %}
+                        <li>⚠️ {{ pattern }}</li>
+                    {% endfor %}
+                </ul>
+
+            {% else %}
+
+                <p class="no-warning">
+                    No suspicious indicators were found by the basic checks.
+                </p>
+
+            {% endif %}
+
+        </div>
+
+        <!-- Security Recommendations -->
+        <div class="recommendation-card">
+
+            <h3>🛡️ Security Recommendations</h3>
+
+            <ul>
+                {% for recommendation in recommendations %}
+                    <li>{{ recommendation }}</li>
+                {% endfor %}
+            </ul>
+
+        </div>
+
+        {% endif %}
+
+        <div class="info">
+            <span>🔒 Machine Learning Based Detection</span>
+            <span>⚡ Fast Analysis</span>
+        </div>
+
+    </div>
+
+
+    <!-- =================================
+         PREDICTION HISTORY SECTION
+    ================================== -->
+
+    <section class="history-section">
+
+        <div class="section-heading">
+            <h2>🕘 Prediction History</h2>
+            <p>Your previously analysed emails</p>
+        </div>
+
+        <div class="history-card">
+
+            <div class="history-header">
+                <h3>Recent Email Analyses</h3>
+
+                <span class="history-count">
+                    {{ prediction_history|length }} Records
+                </span>
+            </div>
+
+            {% if prediction_history %}
+
+            <div class="history-table-wrapper">
+
+                <table class="history-table">
+
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Email Content</th>
+                            <th>Result</th>
+                            <th>Safe %</th>
+                            <th>Phishing %</th>
+                            <th>Date & Time</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for item in prediction_history %}
+
+                        <tr>
+
+                            <td>{{ loop.index }}</td>
+
+                            <td class="history-email"
+                                title="{{ item['email_text'] }}">
+                                {{ item['email_text'] }}
+                            </td>
+
+                            <td>
+                                {% if item['result'] == 'Phishing' %}
+                                    <span class="history-status phishing-status">
+                                        ⚠️ Phishing
+                                    </span>
+                                {% else %}
+                                    <span class="history-status safe-status">
+                                        ✅ Safe
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>{{ item['safe_probability'] }}%</td>
+
+                            <td>{{ item['phishing_probability'] }}%</td>
+
+                            <td>{{ item['created_at'] }}</td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+            <div class="empty-history">
+                <div class="empty-history-icon">📭</div>
+                <h3>No Prediction History Yet</h3>
+                <p>Analyse your first email to see its result here.</p>
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- Model Performance Section -->
+    <section class="performance-section">
+
+        <div class="section-heading">
+            <h2>📊 Model Performance</h2>
+            <p>Performance evaluation on the test dataset</p>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+
+            <div class="stat-card accuracy-card">
+                <div class="stat-icon">🎯</div>
+                <h3>{{ accuracy }}%</h3>
+                <p>Model Accuracy</p>
+            </div>
+
+            <div class="stat-card safe-card">
+                <div class="stat-icon">✅</div>
+                <h3>{{ safe_count }}</h3>
+                <p>Safe Emails in Dataset</p>
+                <small>{{ safe_percentage }}%</small>
+            </div>
+
+            <div class="stat-card phishing-card">
+                <div class="stat-icon">⚠️</div>
+                <h3>{{ phishing_count }}</h3>
+                <p>Phishing Emails in Dataset</p>
+                <small>{{ phishing_percentage }}%</small>
+            </div>
+
+            <div class="stat-card total-card">
+                <div class="stat-icon">📧</div>
+                <h3>{{ total_emails }}</h3>
+                <p>Total Cleaned Emails</p>
+            </div>
+
+        </div>
+
+        <!-- Dataset Distribution -->
+        <div class="distribution-card">
+
+            <h3>Dataset Distribution</h3>
+
+            <div class="distribution-bar">
+
+                <div class="safe-bar"
+                     style="width: {{ safe_percentage }}%">
+                </div>
+
+                <div class="phishing-bar"
+                     style="width: {{ phishing_percentage }}%">
+                </div>
+
+            </div>
+
+            <div class="distribution-labels">
+                <span>🟢 Safe – {{ safe_percentage }}%</span>
+                <span>🔴 Phishing – {{ phishing_percentage }}%</span>
+            </div>
+
+            <!-- Bar, Pie and Line Charts -->
+            <div class="charts-grid">
+
+                <div class="chart-container">
+                    <h3>📊 Email Dataset Comparison</h3>
+                    <canvas id="datasetBarChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>🍩 Email Dataset Distribution</h3>
+                    <canvas id="datasetPieChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>📈 Model Performance Analysis</h3>
+                    <canvas id="performanceLineChart"></canvas>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Confusion Matrix -->
+        <div class="matrix-card">
+
+            <h3>Confusion Matrix</h3>
+
+            <p>
+                Actual vs predicted email classifications
+            </p>
+
+            <img
+                src="{{ url_for('static', filename='confusion_matrix.png') }}"
+                alt="Model Confusion Matrix"
+                class="confusion-image">
+
+            <div class="matrix-description">
+                <span>True Safe: 2164</span>
+                <span>False Phishing: 32</span>
+                <span>Missed Phishing: 48</span>
+                <span>Correct Phishing: 1264</span>
+            </div>
+
+        </div>
+
+        <p class="performance-note">
+            Note: Model metrics are based on the held-out test dataset.
+            Dataset counts represent the cleaned dataset.
+            A Safe prediction does not guarantee that an email is harmless.
+        </p>
+
+    </section>
+
+
+    <!-- Footer -->
+    <footer>
+        <p>Phishing Email Detection | Python • Flask • Machine Learning</p>
+    </footer>
+
+</div>
+
+
+<script>
+
+    // THEME SETTINGS
+
+    const themeToggle = document.getElementById("themeToggle");
+
+    const savedTheme =
+        localStorage.getItem("phishing-theme") || "dark";
+
+    document.documentElement.setAttribute("data-theme", savedTheme);
+
+    function updateThemeButton(theme) {
+        themeToggle.textContent =
+            theme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode";
+    }
+
+    updateThemeButton(savedTheme);
+
+
+    // DATASET VALUES
+
+    const safeCount = {{ safe_count | tojson }};
+    const phishingCount = {{ phishing_count | tojson }};
+
+    const safePercentage = {{ safe_percentage | tojson }};
+    const phishingPercentage = {{ phishing_percentage | tojson }};
+
+    const modelMetrics = {{ model_metrics | tojson }};
+
+
+    // CHART COLORS
+
+    function getChartColors() {
+
+        const theme =
+            document.documentElement.getAttribute("data-theme");
+
+        return {
+            text: theme === "dark" ? "#f1f5f9" : "#172033",
+
+            grid: theme === "dark"
+                ? "rgba(148,163,184,0.15)"
+                : "rgba(71,85,105,0.15)"
+        };
+    }
+
+
+    // BAR CHART
+
+    const barCanvas = document.getElementById("datasetBarChart");
+
+    let datasetBarChart = null;
+
+    if (barCanvas && typeof Chart !== "undefined") {
+
+        const colors = getChartColors();
+
+        datasetBarChart = new Chart(barCanvas, {
+
+            type: "bar",
+
+            data: {
+                labels: ["Safe Emails", "Phishing Emails"],
+
+                datasets: [{
+                    label: "Number of Emails",
+                    data: [safeCount, phishingCount],
+                    backgroundColor: ["#22c55e", "#ef4444"],
+                    borderRadius: 8,
+                    barThickness: 45
+                }]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                plugins: {
+                    legend: {
+                        labels: { color: colors.text }
+                    }
+                },
+
+                scales: {
+                    x: {
+                        ticks: { color: colors.text },
+                        grid: { display: false }
+                    },
+
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: colors.text },
+                        grid: { color: colors.grid },
+
+                        title: {
+                            display: true,
+                            text: "Number of Emails",
+                            color: colors.text
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    // PIE CHART
+
+    const pieCanvas = document.getElementById("datasetPieChart");
+
+    let datasetPieChart = null;
+
+    if (pieCanvas && typeof Chart !== "undefined") {
+
+        const colors = getChartColors();
+
+        datasetPieChart = new Chart(pieCanvas, {
+
+            type: "pie",
+
+            data: {
+                labels: ["Safe Emails", "Phishing Emails"],
+
+                datasets: [{
+                    data: [safeCount, phishingCount],
+                    backgroundColor: ["#22c55e", "#ef4444"],
+                    borderColor: ["#16a34a", "#dc2626"],
+                    borderWidth: 2,
+                    hoverOffset: 12
+                }]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                plugins: {
+                    legend: {
+                        position: "bottom",
+
+                        labels: {
+                            color: colors.text,
+                            padding: 20
+                        }
+                    },
+
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+
+                                const value = context.raw;
+
+                                const percentage =
+                                    ((value / (safeCount + phishingCount)) * 100)
+                                    .toFixed(2);
+
+                                return context.label + ": " +
+                                    value.toLocaleString() +
+                                    " (" + percentage + "%)";
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    // LINE CHART - MODEL PERFORMANCE
+
+    const lineCanvas =
+        document.getElementById("performanceLineChart");
+
+    let performanceLineChart = null;
+
+    if (lineCanvas && typeof Chart !== "undefined") {
+
+        const colors = getChartColors();
+
+        performanceLineChart = new Chart(lineCanvas, {
+
+            type: "line",
+
+            data: {
+                labels: modelMetrics.labels,
+
+                datasets: [
+                    {
+                        label: "Precision",
+                        data: modelMetrics.precision,
+                        borderColor: "#3b82f6",
+                        backgroundColor: "#3b82f6",
+                        tension: 0.4,
+                        pointRadius: 5
+                    },
+
+                    {
+                        label: "Recall",
+                        data: modelMetrics.recall,
+                        borderColor: "#10b981",
+                        backgroundColor: "#10b981",
+                        tension: 0.4,
+                        pointRadius: 5
+                    },
+
+                    {
+                        label: "F1-Score",
+                        data: modelMetrics.f1_score,
+                        borderColor: "#f59e0b",
+                        backgroundColor: "#f59e0b",
+                        tension: 0.4,
+                        pointRadius: 5
+                    }
+                ]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                plugins: {
+                    legend: {
+                        position: "bottom",
+
+                        labels: {
+                            color: colors.text,
+                            padding: 15
+                        }
+                    }
+                },
+
+                scales: {
+                    x: {
+                        ticks: { color: colors.text },
+                        grid: { color: colors.grid }
+                    },
+
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+
+                        ticks: { color: colors.text },
+                        grid: { color: colors.grid },
+
+                        title: {
+                            display: true,
+                            text: "Performance Score (%)",
+                            color: colors.text
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    // UPDATE CHARTS ON THEME CHANGE
+
+    function updateChartsTheme(theme) {
+
+        const colors = getChartColors();
+
+        if (datasetBarChart) {
+
+            datasetBarChart.options.plugins.legend.labels.color = colors.text;
+            datasetBarChart.options.scales.x.ticks.color = colors.text;
+            datasetBarChart.options.scales.y.ticks.color = colors.text;
+            datasetBarChart.options.scales.y.title.color = colors.text;
+            datasetBarChart.options.scales.y.grid.color = colors.grid;
+
+            datasetBarChart.update();
+        }
+
+        if (datasetPieChart) {
+
+            datasetPieChart.options.plugins.legend.labels.color = colors.text;
+            datasetPieChart.update();
+        }
+
+        if (performanceLineChart) {
+
+            performanceLineChart.options.plugins.legend.labels.color = colors.text;
+            performanceLineChart.options.scales.x.ticks.color = colors.text;
+            performanceLineChart.options.scales.y.ticks.color = colors.text;
+            performanceLineChart.options.scales.y.title.color = colors.text;
+            performanceLineChart.options.scales.x.grid.color = colors.grid;
+            performanceLineChart.options.scales.y.grid.color = colors.grid;
+
+            performanceLineChart.update();
+        }
+    }
+
+
+    // THEME BUTTON CLICK
+
+    themeToggle.addEventListener("click", function() {
+
+        const currentTheme =
+            document.documentElement.getAttribute("data-theme");
+
+        const newTheme =
+            currentTheme === "dark" ? "light" : "dark";
+
+        document.documentElement.setAttribute("data-theme", newTheme);
+
+        localStorage.setItem("phishing-theme", newTheme);
+
+        updateThemeButton(newTheme);
+
+        updateChartsTheme(newTheme);
+    });
+
+</script>
+
+</body>
+</html>
